@@ -3,6 +3,7 @@ User registration functionality for the version-build project.
 """
 
 from ..utils import hash_password, validate_username, validate_email
+from .password_policy import validate_password_strength
 
 # In-memory user storage (in a real app, use a database)
 USERS = {
@@ -51,11 +52,20 @@ def register(username, email, password):
             "message": "Invalid email format"
         }
     
-    # Check password length
-    if len(password) < 8:
+    # Validate password strength
+    password_validation = validate_password_strength(password)
+    if not password_validation["is_valid"]:
         return {
             "status": "error",
-            "message": "Password must be at least 8 characters long"
+            "message": f"Password validation failed: {'; '.join(password_validation['errors'])}"
+        }
+    
+    # Check if password is too weak (optional warning)
+    if password_validation["strength_score"] < 50:
+        return {
+            "status": "warning",
+            "message": f"Password is weak (score: {password_validation['strength_score']}). Consider using a stronger password.",
+            "strength_score": password_validation["strength_score"]
         }
     
     # Check if user already exists
